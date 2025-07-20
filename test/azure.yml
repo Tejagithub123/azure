@@ -1,0 +1,62 @@
+---
+- name: Create Azure VM with Ansible
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - vault.yml         # sensitive Azure credentials
+    - variables.yaml         # non-sensitive variables (vm name, size, etc.)
+
+  tasks:
+
+    - name: Create resource group
+      azure.azcollection.azure_rm_resourcegroup:
+        name: "{{ resource_group }}"
+        location: "{{ location }}"
+
+    - name: Create virtual network
+      azure.azcollection.azure_rm_virtualnetwork:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vnet_name }}"
+        address_prefixes: ["10.0.0.0/16"]
+        location: "{{ location }}"
+
+    - name: Create subnet
+      azure.azcollection.azure_rm_subnet:
+        resource_group: "{{ resource_group }}"
+        name: "{{ subnet_name }}"
+        address_prefix: "10.0.1.0/24"
+        virtual_network: "{{ vnet_name }}"
+
+    - name: Create public IP
+      azure.azcollection.azure_rm_publicipaddress:
+        resource_group: "{{ resource_group }}"
+        allocation_method: Static
+        name: "{{ public_ip_name }}"
+        location: "{{ location }}"
+
+    - name: Create Network Interface
+      azure.azcollection.azure_rm_networkinterface:
+        resource_group: "{{ resource_group }}"
+        name: "{{ nic_name }}"
+        location: "{{ location }}"
+        subnet_name: "{{ subnet_name }}"
+        virtual_network_name: "{{ vnet_name }}"
+        public_ip_name: "{{ public_ip_name }}"
+
+    - name: Create virtual machine
+      azure.azcollection.azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}"
+        vm_size: "{{ vm_size }}"
+        admin_username: "{{ admin_username }}"
+        admin_password: "{{ admin_password }}"
+        network_interface_names:
+          - "{{ nic_name }}"
+        image:
+          offer: UbuntuServer
+          publisher: Canonical
+          sku: 18.04-LTS
+          version: latest
+        location: "{{ location }}"

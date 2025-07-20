@@ -1,0 +1,10 @@
+resource_group: myResourceGroup
+location: westeurope
+vnet_name: myVnet
+subnet_name: mySubnet
+public_ip_name: myPublicIP
+nic_name: myNIC
+vm_name: myVM
+vm_size: Standard_B1s
+admin_username: touta
+admin_password: "touta"
