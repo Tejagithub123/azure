@@ -1,0 +1,43 @@
+---
+- name: Create Azure VM using Terraform
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - vars.json      # Contains the VM request
+    - vault.yml      # Encrypted with Ansible Vault
+
+  tasks:
+    - name: Create Terraform working directory
+      file:
+        path: "/tmp/{{ vm.name }}"
+        state: directory
+
+    - name: Generate Terraform config from Jinja2
+      template:
+        src: templates/main.tf.j2
+        dest: "/tmp/{{ vm.name }}/main.tf"
+
+    - name: Run Terraform Init
+      command: terraform init
+      args:
+        chdir: "/tmp/{{ vm.name }}"
+
+    - name: Run Terraform Plan
+      command: terraform plan
+      args:
+        chdir: "/tmp/{{ vm.name }}"
+
+    - name: Run Terraform Apply (create resources)
+      command: terraform apply -auto-approve
+      args:
+        chdir: "/tmp/{{ vm.name }}"
+
+    - name: Pause 120 seconds before destroying
+      pause:
+        seconds: 120
+
+    - name: Run Terraform Destroy (cleanup)
+      command: terraform destroy -auto-approve
+      args:
+        chdir: "/tmp/{{ vm.name }}"
+

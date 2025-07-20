@@ -1,0 +1,12 @@
+{
+  "vm": {
+    "name": "teja-vm",
+    "flavor": "Standard_B1s",
+    "image": "UbuntuServer",
+    "network": "simple-vnet",
+    "username": "touta",
+    "keypair": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDcN814IcQ/NrY/le2J7ip3zyKwt2ePDs/F7jRjIsEoSTrjJ59vcOp95B3cxYDvXruw86AeSXtKllYdv7zDweHXBf4sIy7eFtHykAniEZhX2611Pi+7qSHRzTSlI7kRpWL+yOMqre2TFYYhMcPUKFoarR6Pb9+3CsbU7M4RCiwUv5/wfchCanHDDtrYEFzW2OW12H61nZ23enq06+8ZZOpv+eVBZ6fwesTLBQQbPc4z2sciu6odV6a0xHiwMcrP10QzYZiNsSzH5lMCElxVhuqmlq1R/ue6jTlpvug1LOT/kSqEyKSwMcLtIHY4ixVxd87Pce6cbcRnIYI3aK2r74vRylcWEiruC9wcynP6ooi1o8ag/+9MUzHWc2//s5sWdCYQgn2KMlhj2MkD/mkw2qpBcXVdthwkx+QrO9Du6TjFfLsuJ5pkI8fO9VWYb4GVyfKi+t4Y2rCmMa0dy79gqy4JKfTGMEcgaIrsWTIUADqbK1tEFwbhXOX4I3HuTtzOC1jq2V+euAE/EzB8PATRC10qIj6sDyPS/TbpBemuDtzUcwXc2ZUeP1MAYaBoIH6uVRJD+sU2IzGraGFyqwCu8QacpAIZGUxesqL+HdH8A/URepDNVvcQT2tW+0yXV70KkGSfMLNaEYoYd353GiRgFdbJbiM5kBQC8lEY0nV7ORi6tQ== rsa-key-for-azure",
+    "userData": "#cloud-config\nusers:\n  - name: touta\n    ssh-authorized-keys:\n      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDcN814IcQ/NrY/le2J7ip3zyKwt2ePDs/F7jRjIsEoSTrjJ59vcOp95B3cxYDvXruw86AeSXtKllYdv7zDweHXBf4sIy7eFtHykAniEZhX2611Pi+7qSHRzTSlI7kRpWL+yOMqre2TFYYhMcPUKFoarR6Pb9+3CsbU7M4RCiwUv5/wfchCanHDDtrYEFzW2OW12H61nZ23enq06+8ZZOpv+eVBZ6fwesTLBQQbPc4z2sciu6odV6a0xHiwMcrP10QzYZiNsSzH5lMCElxVhuqmlq1R/ue6jTlpvug1LOT/kSqEyKSwMcLtIHY4ixVxd87Pce6cbcRnIYI3aK2r74vRylcWEiruC9wcynP6ooi1o8ag/+9MUzHWc2//s5sWdCYQgn2KMlhj2MkD/mkw2qpBcXVdthwkx+QrO9Du6TjFfLsuJ5pkI8fO9VWYb4GVyfKi+t4Y2rCmMa0dy79gqy4JKfTGMEcgaIrsWTIUADqbK1tEFwbhXOX4I3HuTtzOC1jq2V+euAE/EzB8PATRC10qIj6sDyPS/TbpBemuDtzUcwXc2ZUeP1MAYaBoIH6uVRJD+sU2IzGraGFyqwCu8QacpAIZGUxesqL+HdH8A/URepDNVvcQT2tW+0yXV70KkGSfMLNaEYoYd353GiRgFdbJbiM5kBQC8lEY0nV7ORi6tQ== rsa-key-for-azure"
+  }
+}
+
