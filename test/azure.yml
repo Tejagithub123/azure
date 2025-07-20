@@ -6,7 +6,9 @@
 
   vars_files:
     - vault.yml         # sensitive Azure credentials
-    - variables.yaml         # non-sensitive variables (vm name, size, etc.)
+    - variables.yaml
+  collections:
+    - azure.azcollection
 
   tasks:
 
