@@ -5,13 +5,10 @@
   gather_facts: false
 
   vars_files:
-    - vault.yml         # sensitive Azure credentials
+    - vault.yml
     - variables.yaml
-  collections:
-    - azure.azcollection
 
   tasks:
-
     - name: Create resource group
       azure.azcollection.azure_rm_resourcegroup:
         name: "{{ resource_group }}"
