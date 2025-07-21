@@ -1,0 +1,65 @@
+---
+- name: Create and Destroy Azure VM via Terraform
+  hosts: terraform-host
+  become: true
+  vars:
+    # Repo & paths
+    repo_url: git@github.com:Tejagithub123/azure.git
+    repo_dest: /home/{{ ansible_user }}/azure
+    tf_working_dir: "{{ repo_dest }}"
+
+  tasks:
+    - name: Ensure Git is installed
+      package:
+        name: git
+        state: present
+
+    - name: Install community.general Ansible collection
+      ansible.builtin.ansible_galaxy:
+        command: install
+        name: community.general
+
+    - name: Clone (or update) your Terraform repo
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dest }}"
+        version: main
+        force: yes
+
+    - name: Initialize & apply Terraform (create resources)
+      community.general.terraform:
+        project_path: "{{ tf_working_dir }}"
+        executable: terraform
+        force_init: true
+        state: present
+        terraform_init: true
+        terraform_plan: true
+        terraform_apply: true
+        apply_args: "-auto-approve"
+
+    - name: Grab all Terraform outputs (JSON)
+      command: terraform output -json
+      args:
+        chdir: "{{ tf_working_dir }}"
+      register: tf_output
+
+    - name: Parse the VM IP from Terraform output
+      set_fact:
+        vm_ip: "{{ (tf_output.stdout | from_json).vm_ip.value }}"
+
+    - name: Show the newly created VM IP
+      debug:
+        msg: "Azure VM public IP is {{ vm_ip }}"
+
+    - name: Pause for 2 minutes (optional)
+      pause:
+        seconds: 120
+
+    - name: Destroy all Terraform-managed resources
+      community.general.terraform:
+        project_path: "{{ tf_working_dir }}"
+        executable: terraform
+        state: absent
+        force_init: true
+        terraform_destroy: true
+        destroy_args: "-auto-approve"
