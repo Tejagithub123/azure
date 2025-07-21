@@ -112,13 +112,19 @@ resource "azurerm_linux_virtual_machine" "vm" {
   }
 
   custom_data = base64encode(<<EOF
+#cloud-config
+users:
+  - name: {{ vm.username }}
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    shell: /bin/bash
 {{ vm.userData | indent(2) }}
 EOF
   )
 }
 
+
+
 output "public_ip_address" {
   description = "The public IP address of the VM"
   value       = azurerm_public_ip.public_ip.ip_address
 }
-
