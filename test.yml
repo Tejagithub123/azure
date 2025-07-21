@@ -1,0 +1,49 @@
+---
+- name: Provision Azure VM via Terraform
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - ../vars/vault.yml
+
+  tasks:
+    - name: Afficher les variables reçues
+      debug:
+        msg: "Provision de la VM {{ vm.name }} de type {{ vm.flavor }} utilisant l'image {{ vm.image }}"
+
+    - name: Créer le répertoire Terraform
+      file:
+        path: "/tmp/{{ vm.name }}"
+        state: directory
+
+    - name: Rendre la configuration Terraform
+      template:
+        src: "../templates/main.tf.j2"
+        dest: "/tmp/{{ vm.name }}/main.tf"
+
+    - name: Initialiser et appliquer Terraform
+      community.general.terraform:
+        project_path: "/tmp/{{ vm.name }}"
+        state: present
+        auto_approve: true
+      register: tf_apply
+
+    - name: Afficher l'IP publique
+      debug:
+        msg: "{{ vm.name }} provisionnée, IP publique = {{ tf_apply.outputs.public_ip_address.value }}"
+
+    - name: Pause 120 secondes avant destruction
+      pause:
+        seconds: 120
+
+    - name: Détruire les ressources Terraform
+      community.general.terraform:
+        project_path: "/tmp/{{ vm.name }}"
+        state: absent
+        auto_approve: true
+
+    - name: Nettoyage du répertoire Terraform
+      file:
+        path: "/tmp/{{ vm.name }}"
+        state: absent
