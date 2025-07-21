@@ -19,6 +19,34 @@
         command: install
         name: community.general
 
+    - name: Check if Terraform is installed
+      command: terraform version
+      register: terraform_check
+      ignore_errors: true
+
+    - name: Add HashiCorp GPG key
+      apt_key:
+        url: https://apt.releases.hashicorp.com/gpg
+        state: present
+      when: terraform_check.rc != 0
+
+    - name: Add HashiCorp repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+        state: present
+      when: terraform_check.rc != 0
+
+    - name: Update apt cache if adding repo
+      apt:
+        update_cache: yes
+      when: terraform_check.rc != 0
+
+    - name: Install Terraform
+      apt:
+        name: terraform
+        state: present
+      when: terraform_check.rc != 0
+
     - name: Clone (or update) your Terraform repo
       git:
         repo: "{{ repo_url }}"
@@ -37,7 +65,7 @@
         terraform_apply: true
         apply_args: "-auto-approve"
 
-    - name: Grab all Terraform outputs (JSON)
+    - name: Grab Terraform outputs (JSON)
       command: terraform output -json
       args:
         chdir: "{{ tf_working_dir }}"
