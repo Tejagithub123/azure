@@ -1,0 +1,27 @@
+- name: Debug and notify Spring
+  hosts: localhost
+  gather_facts: no
+  vars:
+    spring_callback_url: "http://192.168.1.200:8090/api/vms/{{ vmId }}/callback"
+    public_ip: "192.168.1.100"  # Remplace avec la vraie IP obtenue après provisionnement
+
+  tasks:
+    - name: Show request parameters
+      debug:
+        msg:
+          - "VM ID: {{ vmId }}"
+          - "Name: {{ name }}"
+          - "Flavor: {{ flavor }}"
+
+    - name: Notify Spring of VM readiness
+      uri:
+        url: "{{ spring_callback_url }}"
+        method: POST
+        headers:
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          status: "READY"
+          publicIp: "{{ public_ip }}"
+        status_code: 200
+      ignore_errors: yes
