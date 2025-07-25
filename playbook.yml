@@ -3,7 +3,6 @@
   hosts: localhost
   gather_facts: false
   vars_files:
-    - vars.json      # Contains the VM request
     - vault.yml      # Encrypted with Ansible Vault
 
   tasks:
