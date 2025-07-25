@@ -19,21 +19,27 @@ provider "azurerm" {
 
 resource "azurerm_resource_group" "rg" {
   name     = "{{ vm.name }}-rg"
-  location = "East US"
+  location = "{{ vm.location | default('East US') }}"
 }
 
 resource "azurerm_virtual_network" "vnet" {
-  name                = "{{ vm.name }}-vnet"
-  address_space       = ["10.0.0.0/16"]
+  name                = "{{ vm.network }}-vnet"
+  address_space       = ["{{ vm.network_cidr | default('10.0.0.0/16') }}"]
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 }
 
+resource "azurerm_subnet" "subnet" {
+  name                 = "{{ vm.network }}-subnet"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["{{ vm.subnet_cidr | default('10.0.1.0/24') }}"]
+}
+
 resource "azurerm_network_security_group" "ssh_nsg" {
-  name                = "{{ vm.name }}-nsg"
+  name                = "{{ vm.network }}-nsg"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
-
   security_rule {
     name                       = "Allow-SSH"
     priority                   = 1001
@@ -47,14 +53,7 @@ resource "azurerm_network_security_group" "ssh_nsg" {
   }
 }
 
-resource "azurerm_subnet" "subnet" {
-  name                 = "{{ vm.name }}-subnet"
-  resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.1.0/24"]
-}
-
-resource "azurerm_subnet_network_security_group_association" "subnet_nsg_assoc" {
+resource "azurerm_subnet_network_security_group_association" "assoc" {
   subnet_id                 = azurerm_subnet.subnet.id
   network_security_group_id = azurerm_network_security_group.ssh_nsg.id
 }
@@ -71,56 +70,70 @@ resource "azurerm_network_interface" "nic" {
   name                = "{{ vm.name }}-nic"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
-
   ip_configuration {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.public_ip.id
   }
-
-  # No network_security_group_id here
 }
 
 resource "azurerm_linux_virtual_machine" "vm" {
-  name                = "{{ vm.name }}"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
-  size                = "{{ vm.flavor }}"
-
-  admin_username = "{{ vm.username }}"
+  name                  = "{{ vm.name }}"
+  resource_group_name   = azurerm_resource_group.rg.name
+  location              = azurerm_resource_group.rg.location
+  size                  = "{{ vm.flavor }}"
+  admin_username        = "{{ vm.sshUser }}"
+  network_interface_ids = [azurerm_network_interface.nic.id]
+  disable_password_authentication = true
 
   admin_ssh_key {
-    username   = "{{ vm.username }}"
+    username   = "{{ vm.sshUser }}"
     public_key = "{{ vm.keypair }}"
   }
-
-  network_interface_ids = [
-    azurerm_network_interface.nic.id,
-  ]
 
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
+    name                 = "{{ vm.name }}-osdisk"
   }
 
-  source_image_reference {
-    publisher = "Canonical"
-    offer     = "0001-com-ubuntu-server-focal"
-    sku       = "20_04-lts"
-    version   = "latest"
-  }
+ source_image_reference {
+  {% if vm.image == 'CentosServer' %}
+  publisher = "OpenLogic"
+  offer     = "CentOS"
+  sku       = "8_5-gen2"
+  {% elif vm.image == 'RhelServer' %}
+  publisher = "RedHat"
+  offer     = "RHEL"
+  sku       = "8-lvm-gen2"
+  {% elif vm.image == 'UbuntuServer' %}
+  publisher = "Canonical"
+  offer     = "0001-com-ubuntu-server-jammy"
+  sku       = "22_04-lts-gen2"
+  {% else %}
+  # fallback to Ubuntu if no match
+  publisher = "Canonical"
+  offer     = "0001-com-ubuntu-server-jammy"
+  sku       = "22_04-lts-gen2"
+  {% endif %}
+  version = "latest"
+}
 
-  custom_data = base64encode(<<EOF
+
+custom_data = base64encode(<<EOF
 #cloud-config
 users:
-  - name: {{ vm.username }}
+  - name: {{ vm.sshUser }}
     sudo: ['ALL=(ALL) NOPASSWD:ALL']
     shell: /bin/bash
-{{ vm.userData | indent(2) }}
+    ssh_authorized_keys:
+      - {{ vm.keypair }}
 EOF
   )
 }
+
+
 
 
 
