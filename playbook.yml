@@ -5,38 +5,95 @@
   vars_files:
     - vault.yml      # Encrypted with Ansible Vault
 
+  vars:
+    tf_dir: "/tmp/{{ vm.name }}"
+    plugin_dir: "/root/terraform-plugins"
+    azurerm_version: "3.0.2"
+    spring_backend_url: "http://192.168.1.15:8090/api/vms/{{ vm.vmId }}/callback"
+
   tasks:
-    - name: Create Terraform working directory
+    - name: Afficher les variables reçues
+      debug:
+        msg: |
+          Appel web →
+            Nom VM   = {{ vm.name }}
+            Flavor   = {{ vm.flavor }}
+            Image    = {{ vm.image }}
+            Network  = {{ vm.network | default('default-vnet') }}
+            SSH User = {{ vm.sshUser }}
+
+    - name: Installer git, unzip et dnf-python
+      raw: dnf install -y python3-dnf git unzip
+      args:
+        warn: false
+
+    - name: Créer le dossier Terraform
       file:
-        path: "/tmp/{{ vm.name }}"
+        path: "{{ tf_dir }}"
         state: directory
 
-    - name: Generate Terraform config from Jinja2
+    - name: Ajouter github.com aux known_hosts
+      known_hosts:
+        name: github.com
+        key: "{{ lookup('pipe','ssh-keyscan github.com') }}"
+        path: /root/.ssh/known_hosts
+        state: present
+
+    - name: Cloner le code Terraform
+      git:
+        repo: "git@github.com:Tejagithub123/azure.git"
+        dest: "{{ tf_dir }}"
+        version: main
+        depth: 1
+        accept_hostkey: true
+      environment:
+        GIT_SSH_COMMAND: ssh -i /root/.ssh/id_rsa -o StrictHostKeyChecking=no
+
+    - name: Rendre la config Terraform (Jinja2 → main.tf)
       template:
-        src: templates/main.tf.j2
-        dest: "/tmp/{{ vm.name }}/main.tf"
+        src: "templates/main.tf.j2"
+        dest: "{{ tf_dir }}/main.tf"
 
-    - name: Run Terraform Init
-      command: terraform init
+    - name: Initialiser Terraform en offline mirror
+      command: terraform init -plugin-dir={{ plugin_dir }}
       args:
-        chdir: "/tmp/{{ vm.name }}"
+        chdir: "{{ tf_dir }}"
 
-    - name: Run Terraform Plan
-      command: terraform plan
+    - name: Plan Terraform
+      command: terraform plan -out=plan.tfplan
       args:
-        chdir: "/tmp/{{ vm.name }}"
+        chdir: "{{ tf_dir }}"
 
-    - name: Run Terraform Apply (create resources)
-      command: terraform apply -auto-approve
+    - name: Appliquer Terraform (provision)
+      command: terraform apply -auto-approve plan.tfplan
       args:
-        chdir: "/tmp/{{ vm.name }}"
+        chdir: "{{ tf_dir }}"
+      register: tf_apply
 
-    - name: Pause 120 seconds before destroying
-      pause:
-        seconds: 120
+    - name: Afficher sortie Terraform
+      debug:
+        var: tf_apply.stdout
 
-    - name: Run Terraform Destroy (cleanup)
-      command: terraform destroy -auto-approve
+    - name: Récupérer IP publique Terraform
+      command: terraform output -raw public_ip_address
       args:
-        chdir: "/tmp/{{ vm.name }}"
+        chdir: "{{ tf_dir }}"
+      register: public_ip_output
+
+    - name: Appeler l’API Spring Boot pour indiquer que la VM est prête
+      uri:
+        url: "{{ spring_backend_url }}"
+        method: POST
+        headers:
+          Content-Type: application/json
+        body: |
+          {
+            "status": "RUNNING",
+            "publicIp": "{{ public_ip_output.stdout }}"
+          }
+        body_format: json
+      ignore_errors: true
+
+
+
 
