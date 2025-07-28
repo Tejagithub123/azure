@@ -22,11 +22,6 @@
             Network  = {{ vm.network | default('default-vnet') }}
             SSH User = {{ vm.sshUser }}
 
-    - name: Installer git, unzip et dnf-python
-      raw: dnf install -y python3-dnf git unzip
-      args:
-        warn: false
-
     - name: Créer le dossier Terraform
       file:
         path: "{{ tf_dir }}"
@@ -41,7 +36,7 @@
 
     - name: Cloner le code Terraform
       git:
-        repo: "git@github.com:Tejagithub123/azure.git"
+        repo: "https://github.com/Tejagithub123/azure.git"
         dest: "{{ tf_dir }}"
         version: main
         depth: 1
@@ -80,19 +75,6 @@
         chdir: "{{ tf_dir }}"
       register: public_ip_output
 
-    - name: Appeler l’API Spring Boot pour indiquer que la VM est prête
-      uri:
-        url: "{{ spring_backend_url }}"
-        method: POST
-        headers:
-          Content-Type: application/json
-        body: |
-          {
-            "status": "RUNNING",
-            "publicIp": "{{ public_ip_output.stdout }}"
-          }
-        body_format: json
-      ignore_errors: true
 
 
 
