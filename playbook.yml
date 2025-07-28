@@ -43,7 +43,7 @@
         dest: "{{ tf_dir }}/main.tf"
 
     - name: Initialiser Terraform en offline mirror
-      command: terraform init -plugin-dir={{ plugin_dir }}
+      command: terraform init 
       args:
         chdir: "{{ tf_dir }}"
 
