@@ -27,13 +27,6 @@
         path: "{{ tf_dir }}"
         state: directory
 
-    - name: Ajouter github.com aux known_hosts
-      known_hosts:
-        name: github.com
-        key: "{{ lookup('pipe','ssh-keyscan github.com') }}"
-        path: /root/.ssh/known_hosts
-        state: present
-
     - name: Cloner le code Terraform
       git:
         repo: "https://github.com/Tejagithub123/azure.git"
